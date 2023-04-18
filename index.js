@@ -148,6 +148,14 @@ var data = courses.map(x => x.classname + ": " + x.grade).join("\n")
 let title = "Grades"
 let widget = new ListWidget()
 
+let gradient = new LinearGradient()
+    gradient.locations = [0, 1]
+    gradient.colors = [
+      new Color("141414"),
+      new Color("13233F)
+    ]
+widget.backgroundGradient = gradient
+
 let titleStack = widget.addStack()
 let titleField = titleStacl.addText(title)
     titleField.textColor = Color.white()

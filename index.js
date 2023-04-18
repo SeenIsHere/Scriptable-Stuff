@@ -145,6 +145,8 @@ var cookie = await portal.verify_get_cookie()
 var courses = await portal.get_courses(cookie, 3)
 var data = courses.map(x => x.classname + ": " + x.grade).join("\n")
 
+console.log(data)
+
 let title = "Grades"
 let widget = new ListWidget()
 

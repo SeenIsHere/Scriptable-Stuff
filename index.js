@@ -157,7 +157,7 @@ let gradient = new LinearGradient()
 widget.backgroundGradient = gradient
 
 let titleStack = widget.addStack()
-let titleField = titleStacl.addText(title)
+let titleField = titleStack.addText(title)
     titleField.textColor = Color.white()
     titleField.textOpacity = 0.7
     titleField.font = Font.mediumSystemFont(13)

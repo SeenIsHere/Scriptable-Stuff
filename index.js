@@ -140,7 +140,7 @@ class GradePortal {
 
 
 
-var portal = new GradePortal("012018398", "Sadie15!")
+var portal = new GradePortal(USER, PASS)
 var cookie = await portal.verify_get_cookie()
 var courses = await portal.get_courses(cookie, 3)
 var data = courses.map(x => x.classname + ": " + x.grade).join("\n")

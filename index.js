@@ -120,6 +120,8 @@ class GradePortal {
 
     var cookie = req_cookies.join("; ") + ";"
     
+    var final_req = new Request("https://www.fridaystudentportal.com/portal/security/validateStudent.cfm")
+    
     final_req.headers = { 
       ...headers,
       "content-type": "application/x-www-form-urlencoded",

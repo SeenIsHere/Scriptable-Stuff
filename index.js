@@ -1,4 +1,158 @@
 var htmlparser = importModule("html_parser")
 const parse = htmlparser.parse
 
-console.log("prob worked")
+const headers = {
+  "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+  "accept-language": "en-US,en;q=0.9,it;q=0.8",
+  "cache-control": "max-age=0",
+  "sec-ch-ua": "\"Google Chrome\";v=\"111\", \"Not(A:Brand\";v=\"8\", \"Chromium\";v=\"111\"",
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": "\"Windows\"",
+  "sec-fetch-dest": "document",
+  "sec-fetch-mode": "navigate",
+  "sec-fetch-site": "same-origin",
+  "sec-fetch-user": "?1",
+  "upgrade-insecure-requests": "1",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Referer": "https://www.fridaystudentportal.com/portal/index.cfm?f=gradebook.cfm"
+}
+
+class GradePortal {
+  constructor(username, password){
+    this.username = username
+    this.password = password
+  }
+
+  async set_year(cookie, year){
+    const { username } = this
+    
+    var req = new Request("https://www.fridaystudentportal.com/portal/security/sqlChangeYear.cfm")
+    
+    req.headers = {
+        ...headers,
+        "content-type": "application/x-www-form-urlencoded",
+        "cookie": cookie
+    }
+    req.body = "changeYearTo=" + year + "&addressID=0&studentID=" + username + "&locationID=010+"
+    req.method = "POST
+    
+    var content = await req.loadString()
+    
+    return content
+  }
+
+  async get_courses(cookie, mp){
+    //makes sure mp is a valid number
+    if(mp && (mp<1 || mp>4)) throw new Error("Invalid Marking Period Value")
+
+    //if mp is provided use that, fallback to a request to most recent marking period 
+    //using the cookie pattern used on the website
+      var options = mp ? ({
+        "headers": { 
+          ...headers,
+          "content-type": "application/x-www-form-urlencoded",
+          "cookie": cookie,
+        },
+        "body": "selectMP=" + mp,
+        "method": "POST"
+      }) : ({
+        "headers": { ...headers, "cookie": cookie },
+        "body": null,
+        "method": "GET"
+      })
+
+    //fetch content with cookies grom gradeportal
+    var req = new Request("https://www.fridaystudentportal.com/portal/index.cfm?f=gradebook.cfm")
+    
+    req.headers = options.headers
+    req.body = options.body
+    req.method = options.method
+    
+    var content = await req.loadString()
+    
+
+    //parse the table rows
+    return parse(content).querySelectorAll("tbody > tr").map(row => {
+      var columns = row.querySelectorAll("td")
+      return [
+        columns[0].querySelector("a"),
+        columns[1],
+        columns[2].querySelector("a")
+      ].map(tag => tag.text.replace(/\n/g, ""))
+      
+    }).map(set => {
+      var [classname, grade, teachers] = set
+      
+      classname = classname.trim()
+  
+      classname = classname.toLowerCase().includes("lunch") ? classname.slice(0, classname.lastIndexOf(" ")) : classname
+      classname = classname.includes(" -") ? classname.slice(0, classname.indexOf(" -"))    : classname
+      classname = classname.includes("[")  ? classname.slice(0, classname.indexOf("[") - 1) : classname
+  
+      grade = grade.slice(0, grade.indexOf("/")).trim()
+      teachers = teachers.split("\n").filter(value => value !== "").map(x => x.trim())
+  
+      return { classname, grade, teachers }
+    })
+    .filter(({ grade }) => grade !== "")
+    
+  }
+
+  async verify_get_cookie(){
+    const { username, password } = this
+    //gets base cookies
+    var req = new Request("https://fridaystudentportal.com/portal/security/login.cfm")
+    
+    req.headers = { "cookie": "DISTRICTID=ACITECH;" }
+    
+    var content = req.loadString()
+    
+    return req.response
+    
+//     var req_cookies = [
+//       "CFCLIENT_PARENTPORTAL=mod%5Fnotificationcontactmaintenance%3D0%23loggedin%3Dtrue%23username%3D" + username + "%23mod%5Fgradebookuseskills%3D0%23usealtlanguage1%3D0%23locationid%3D010%20%23realitemployee%3D0%23yearid%3D2022%23transcriptlocation%3D%2F%2F10%2E78%2E42%2E1%2FC52317%5FH63298%5Fnas1%23mainserverdomain%3Dhttps%3A%2F%2Fsecure%2Efridaysis%2Ecom%23limityearid%3D2022%23originaladdressidloggedin%3D0%23shareddbpath%3DSharedAbseconACITech%2Edbo%2E%23fileserverdomain%3Dhttps%3A%2F%2Fmedia%2Efridaysis%2Ecom%23districtid%3DACITECH%23mod%5Fcafeteriaonlineorders%3D0%23dbname%3DACITECH%23mod%5Fbli%3D1%23fileserverlocation%3D%2F%2F65%2E36%2E243%2E230%23iepdocumentlocation%3D%2F%2F10%2E78%2E42%2E1%2FC52317%5FH63298%5Fnas1%23ieponly%3D0%23getyear%3D2022%23parentportalpassword%3D" + encodeURIComponent(password) + "%23addressid%3D0%23parentportalcode%3D0%23requireportalcode%3D0%23studentid%3D" + username.slice(4) + "%23defaultmarkingperiod%3D4%23mainserverip%3D65%2E36%2E243%2E158%23",
+//       "DISTRICTID=ACITECH",
+//       "PARENTPORTALCODE=\"\"",
+//       "PARENTPORTALUSERNAME=\"\""
+//     ]
+    
+//     res_cookies.split("; ").forEach(snippet => {
+//       //gets the index of the first occurance of a string from the list
+//       var idx = ["JSESSIONID", "__cf_bm", "Realtimecookie"]
+//                 .map(y => snippet.indexOf(y))
+//                 .filter(x => x !== -1)
+//                 .sort((a, b) => a - b)[0] ?? -1
+      
+//       if(idx == -1) return;
+      
+//       req_cookies= [...req_cookies, snippet.slice(idx)]
+//     })
+
+//     //joins cookie from inputted data
+//     var cookie = req_cookies.join("; ") + ";"
+
+//     //validates cookie
+//     await fetch("https://www.fridaystudentportal.com/portal/security/validateStudent.cfm", {
+//         "headers": { 
+//           ...headers,
+//           "content-type": "application/x-www-form-urlencoded",
+//           "cookie": cookie,
+//         },
+//         "body": "username=" + username + "&password=" + encodeURIComponent(password),
+//         "method": "POST"
+//       });
+  
+//     return cookie
+  }
+};
+
+
+(async () => {
+  var portal = new GradePortal("user", "pass")
+  
+  console.log(portal)
+})()
+ 
+ 
+ 
+ 

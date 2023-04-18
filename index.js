@@ -42,11 +42,9 @@ class GradePortal {
   }
 
   async get_courses(cookie, mp){
-    //makes sure mp is a valid number
+
     if(mp && (mp<1 || mp>4)) throw new Error("Invalid Marking Period Value")
 
-    //if mp is provided use that, fallback to a request to most recent marking period 
-    //using the cookie pattern used on the website
       var options = mp ? ({
         "headers": { 
           ...headers,
@@ -61,7 +59,6 @@ class GradePortal {
         "method": "GET"
       })
 
-    //fetch content with cookies grom gradeportal
     var req = new Request("https://www.fridaystudentportal.com/portal/index.cfm?f=gradebook.cfm")
     
     req.headers = options.headers
@@ -70,8 +67,6 @@ class GradePortal {
     
     var content = await req.loadString()
     
-
-    //parse the table rows
     return parse(content).querySelectorAll("tbody > tr").map(row => {
       var columns = row.querySelectorAll("td")
       return [
@@ -100,49 +95,44 @@ class GradePortal {
 
   async verify_get_cookie(){
     const { username, password } = this
-    //gets base cookies
+
     var req = new Request("https://fridaystudentportal.com/portal/security/login.cfm")
     
     req.headers = { "cookie": "DISTRICTID=ACITECH;" }
     
-    var content = req.loadString()
+    await req.load()
     
-    return req.response
+   
     
-//     var req_cookies = [
-//       "CFCLIENT_PARENTPORTAL=mod%5Fnotificationcontactmaintenance%3D0%23loggedin%3Dtrue%23username%3D" + username + "%23mod%5Fgradebookuseskills%3D0%23usealtlanguage1%3D0%23locationid%3D010%20%23realitemployee%3D0%23yearid%3D2022%23transcriptlocation%3D%2F%2F10%2E78%2E42%2E1%2FC52317%5FH63298%5Fnas1%23mainserverdomain%3Dhttps%3A%2F%2Fsecure%2Efridaysis%2Ecom%23limityearid%3D2022%23originaladdressidloggedin%3D0%23shareddbpath%3DSharedAbseconACITech%2Edbo%2E%23fileserverdomain%3Dhttps%3A%2F%2Fmedia%2Efridaysis%2Ecom%23districtid%3DACITECH%23mod%5Fcafeteriaonlineorders%3D0%23dbname%3DACITECH%23mod%5Fbli%3D1%23fileserverlocation%3D%2F%2F65%2E36%2E243%2E230%23iepdocumentlocation%3D%2F%2F10%2E78%2E42%2E1%2FC52317%5FH63298%5Fnas1%23ieponly%3D0%23getyear%3D2022%23parentportalpassword%3D" + encodeURIComponent(password) + "%23addressid%3D0%23parentportalcode%3D0%23requireportalcode%3D0%23studentid%3D" + username.slice(4) + "%23defaultmarkingperiod%3D4%23mainserverip%3D65%2E36%2E243%2E158%23",
-//       "DISTRICTID=ACITECH",
-//       "PARENTPORTALCODE=\"\"",
-//       "PARENTPORTALUSERNAME=\"\""
-//     ]
+    var req_cookies = [
+      "CFCLIENT_PARENTPORTAL=mod%5Fnotificationcontactmaintenance%3D0%23loggedin%3Dtrue%23username%3D" + username + "%23mod%5Fgradebookuseskills%3D0%23usealtlanguage1%3D0%23locationid%3D010%20%23realitemployee%3D0%23yearid%3D2022%23transcriptlocation%3D%2F%2F10%2E78%2E42%2E1%2FC52317%5FH63298%5Fnas1%23mainserverdomain%3Dhttps%3A%2F%2Fsecure%2Efridaysis%2Ecom%23limityearid%3D2022%23originaladdressidloggedin%3D0%23shareddbpath%3DSharedAbseconACITech%2Edbo%2E%23fileserverdomain%3Dhttps%3A%2F%2Fmedia%2Efridaysis%2Ecom%23districtid%3DACITECH%23mod%5Fcafeteriaonlineorders%3D0%23dbname%3DACITECH%23mod%5Fbli%3D1%23fileserverlocation%3D%2F%2F65%2E36%2E243%2E230%23iepdocumentlocation%3D%2F%2F10%2E78%2E42%2E1%2FC52317%5FH63298%5Fnas1%23ieponly%3D0%23getyear%3D2022%23parentportalpassword%3D" + encodeURIComponent(password) + "%23addressid%3D0%23parentportalcode%3D0%23requireportalcode%3D0%23studentid%3D" + username.slice(4) + "%23defaultmarkingperiod%3D4%23mainserverip%3D65%2E36%2E243%2E158%23",
+      "DISTRICTID=ACITECH",
+      "PARENTPORTALCODE=\"\"",
+      "PARENTPORTALUSERNAME=\"\""
+    ]
     
-//     res_cookies.split("; ").forEach(snippet => {
-//       //gets the index of the first occurance of a string from the list
-//       var idx = ["JSESSIONID", "__cf_bm", "Realtimecookie"]
-//                 .map(y => snippet.indexOf(y))
-//                 .filter(x => x !== -1)
-//                 .sort((a, b) => a - b)[0] ?? -1
-      
-//       if(idx == -1) return;
-      
-//       req_cookies= [...req_cookies, snippet.slice(idx)]
-//     })
+     req.response.cookies.forEach(({ name, value }) => {
+      if(["JSESSIONID", "__cf_bm", "Realtimecookie"].includes(name)){
+        req_cookies.push(name + "=" + value)
+      }
+     })
+    
 
-//     //joins cookie from inputted data
-//     var cookie = req_cookies.join("; ") + ";"
+    var cookie = req_cookies.join("; ") + ";"
+    
+    final_req.headers = { 
+      ...headers,
+      "content-type": "application/x-www-form-urlencoded",
+      "cookie": cookie,
+    }
 
-//     //validates cookie
-//     await fetch("https://www.fridaystudentportal.com/portal/security/validateStudent.cfm", {
-//         "headers": { 
-//           ...headers,
-//           "content-type": "application/x-www-form-urlencoded",
-//           "cookie": cookie,
-//         },
-//         "body": "username=" + username + "&password=" + encodeURIComponent(password),
-//         "method": "POST"
-//       });
+    final_req.body = "username=" + username + "&password=" + encodeURIComponent(password)
+    
+    final_req.method = "POST"
+    
+    await final_req.load()
   
-//     return cookie
+    return cookie
   }
 };
 

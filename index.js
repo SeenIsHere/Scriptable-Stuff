@@ -149,8 +149,9 @@ class GradePortal {
 
 (async () => {
   var portal = new GradePortal("user", "pass")
+  var cookie = await portal.verify_get_cookie()
   
-  console.log(portal)
+  console.log(cookie)
 })()
  
  

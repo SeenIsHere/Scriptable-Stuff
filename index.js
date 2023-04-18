@@ -139,13 +139,27 @@ class GradePortal {
 };
 
 
-(async () => {
-  var portal = new GradePortal("user", "pass")
-  var cookie = await portal.verify_get_cookie()
-  
-  console.log(cookie)
-})()
- 
- 
- 
- 
+
+var portal = new GradePortal("012018398", "Sadie15!")
+var cookie = await portal.verify_get_cookie()
+var courses = await portal.get_courses(cookie, 3)
+var data = courses.map(x => x.classname + ": " + x.grade).join("\n")
+
+let title = "Grades"
+let widget = new ListWidget()
+
+let titleStack = widget.addStack()
+let titleField = titleStacl.addText(title)
+    titleField.textColor = Color.white()
+    titleField.textOpacity = 0.7
+    titleField.font = Font.mediumSystemFont(13)
+
+widget.addSpacer(12)
+
+let desc = widget.addText(data)
+    desc.minimumScaleFactor = 0.5
+    desc.textColor = Color.white()
+    desc.font = Font.systemFont(18)
+
+Script.setWidget(widget)
+Script.complete()

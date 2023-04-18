@@ -1,5 +1,5 @@
-var htmlparser = importModule("html_parser")
-const parse = htmlparser.parse
+var htmlparser = importModule("html_parser");
+const parse = htmlparser.parse;
 
 const headers = {
   "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
@@ -15,35 +15,35 @@ const headers = {
   "upgrade-insecure-requests": "1",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Referer": "https://www.fridaystudentportal.com/portal/index.cfm?f=gradebook.cfm"
-}
+};
 
 class GradePortal {
   constructor(username, password){
-    this.username = username
-    this.password = password
+    this.username = username;
+    this.password = password;
   }
 
   async set_year(cookie, year){
-    const { username } = this
+    const { username } = this;
     
-    var req = new Request("https://www.fridaystudentportal.com/portal/security/sqlChangeYear.cfm")
+    var req = new Request("https://www.fridaystudentportal.com/portal/security/sqlChangeYear.cfm");
     
     req.headers = {
         ...headers,
         "content-type": "application/x-www-form-urlencoded",
         "cookie": cookie
-    }
-    req.body = "changeYearTo=" + year + "&addressID=0&studentID=" + username + "&locationID=010+"
-    req.method = "POST"
+    };
+    req.body = "changeYearTo=" + year + "&addressID=0&studentID=" + username + "&locationID=010+";
+    req.method = "POST";
     
-    var content = await req.loadString()
+    var content = await req.loadString();
     
-    return content
+    return content;
   }
 
   async get_courses(cookie, mp){
 
-    if(mp && (mp<1 || mp>4)) throw new Error("Invalid Marking Period Value")
+    if(mp && (mp<1 || mp>4)) throw new Error("Invalid Marking Period Value");
 
       var options = mp ? ({
         "headers": { 
@@ -57,50 +57,50 @@ class GradePortal {
         "headers": { ...headers, "cookie": cookie },
         "body": null,
         "method": "GET"
-      })
+      });
 
-    var req = new Request("https://www.fridaystudentportal.com/portal/index.cfm?f=gradebook.cfm")
+    var req = new Request("https://www.fridaystudentportal.com/portal/index.cfm?f=gradebook.cfm");
     
-    req.headers = options.headers
-    req.body = options.body
-    req.method = options.method
+    req.headers = options.headers;
+    req.body = options.body;
+    req.method = options.method;
     
-    var content = await req.loadString()
+    var content = await req.loadString();
     
     return parse(content).querySelectorAll("tbody > tr").map(row => {
-      var columns = row.querySelectorAll("td")
+      var columns = row.querySelectorAll("td");
       return [
         columns[0].querySelector("a"),
         columns[1],
         columns[2].querySelector("a")
-      ].map(tag => tag.text.replace(/\n/g, ""))
+      ].map(tag => tag.text.replace(/\n/g, ""));
       
     }).map(set => {
-      var [classname, grade, teachers] = set
+      var [classname, grade, teachers] = set;
       
-      classname = classname.trim()
+      classname = classname.trim();
   
-      classname = classname.toLowerCase().includes("lunch") ? classname.slice(0, classname.lastIndexOf(" ")) : classname
-      classname = classname.includes(" -") ? classname.slice(0, classname.indexOf(" -"))    : classname
-      classname = classname.includes("[")  ? classname.slice(0, classname.indexOf("[") - 1) : classname
+      classname = classname.toLowerCase().includes("lunch") ? classname.slice(0, classname.lastIndexOf(" ")) : classname;
+      classname = classname.includes(" -") ? classname.slice(0, classname.indexOf(" -"))    : classname;
+      classname = classname.includes("[")  ? classname.slice(0, classname.indexOf("[") - 1) : classname;
   
-      grade = grade.slice(0, grade.indexOf("/")).trim()
-      teachers = teachers.split("\n").filter(value => value !== "").map(x => x.trim())
+      grade = grade.slice(0, grade.indexOf("/")).trim();
+      teachers = teachers.split("\n").filter(value => value !== "").map(x => x.trim());
   
-      return { classname, grade, teachers }
+      return { classname, grade, teachers };
     })
-    .filter(({ grade }) => grade !== "")
+    .filter(({ grade }) => grade !== "");
     
   }
 
   async verify_get_cookie(){
-    const { username, password } = this
+    const { username, password } = this;
 
-    var req = new Request("https://fridaystudentportal.com/portal/security/login.cfm")
+    var req = new Request("https://fridaystudentportal.com/portal/security/login.cfm");
     
-    req.headers = { "cookie": "DISTRICTID=ACITECH;" }
+    req.headers = { "cookie": "DISTRICTID=ACITECH;" };
     
-    await req.load()
+    await req.load();
     
    
     
@@ -109,67 +109,67 @@ class GradePortal {
       "DISTRICTID=ACITECH",
       "PARENTPORTALCODE=\"\"",
       "PARENTPORTALUSERNAME=\"\""
-    ]
+    ];
     
      req.response.cookies.forEach(({ name, value }) => {
       if(["JSESSIONID", "__cf_bm", "Realtimecookie"].includes(name)){
-        req_cookies.push(name + "=" + value)
+        req_cookies.push(name + "=" + value);
       }
-     })
+     });
     
 
-    var cookie = req_cookies.join("; ") + ";"
+    var cookie = req_cookies.join("; ") + ";";
     
-    var final_req = new Request("https://www.fridaystudentportal.com/portal/security/validateStudent.cfm")
+    var final_req = new Request("https://www.fridaystudentportal.com/portal/security/validateStudent.cfm");
     
     final_req.headers = { 
       ...headers,
       "content-type": "application/x-www-form-urlencoded",
       "cookie": cookie,
-    }
+    };
 
-    final_req.body = "username=" + username + "&password=" + encodeURIComponent(password)
+    final_req.body = "username=" + username + "&password=" + encodeURIComponent(password);
     
-    final_req.method = "POST"
+    final_req.method = "POST";
     
-    await final_req.load()
+    await final_req.load();
   
-    return cookie
+    return cookie;
   }
 };
 
 
 
-var portal = new GradePortal(USER, PASS)
-var cookie = await portal.verify_get_cookie()
-var courses = await portal.get_courses(cookie, 3)
-var data = courses.map(x => x.classname + ": " + x.grade).join("\n")
+var portal = new GradePortal(USER, PASS);
+var cookie = await portal.verify_get_cookie();
+var courses = await portal.get_courses(cookie, 3);
+var data = courses.map(x => x.classname + ": " + x.grade).join("\n");
 
-console.log(data)
+console.log(data);
 
-let title = "Grades"
-let widget = new ListWidget()
+let title = "Grades";
+let widget = new ListWidget();
 
-let gradient = new LinearGradient()
-    gradient.locations = [0, 1]
+let gradient = new LinearGradient();
+    gradient.locations = [0, 1];
     gradient.colors = [
       new Color("141414"),
       new Color("13233F")
-    ]
-widget.backgroundGradient = gradient
+    ];
+widget.backgroundGradient = gradient;
 
-let titleStack = widget.addStack()
-let titleField = titleStack.addText(title)
-    titleField.textColor = Color.white()
-    titleField.textOpacity = 0.7
-    titleField.font = Font.mediumSystemFont(13)
+let titleStack = widget.addStack();
+let titleField = titleStack.addText(title);
+    titleField.textColor = Color.white();
+    titleField.textOpacity = 0.7;
+    titleField.font = Font.mediumSystemFont(13);
 
-widget.addSpacer(12)
+widget.addSpacer(12);
 
-let desc = widget.addText(data)
-    desc.minimumScaleFactor = 0.5
-    desc.textColor = Color.white()
-    desc.font = Font.systemFont(18)
+let desc = widget.addText(data);
+    desc.minimumScaleFactor = 0.5;
+    desc.textColor = Color.white();
+    desc.font = Font.systemFont(18);
 
-Script.setWidget(widget)
-Script.complete()
+Script.setWidget(widget);
+Script.complete();

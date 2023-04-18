@@ -154,7 +154,7 @@ let gradient = new LinearGradient()
     gradient.locations = [0, 1]
     gradient.colors = [
       new Color("141414"),
-      new Color("13233F)
+      new Color("13233F")
     ]
 widget.backgroundGradient = gradient
 

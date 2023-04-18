@@ -34,7 +34,7 @@ class GradePortal {
         "cookie": cookie
     }
     req.body = "changeYearTo=" + year + "&addressID=0&studentID=" + username + "&locationID=010+"
-    req.method = "POST
+    req.method = "POST"
     
     var content = await req.loadString()
     
